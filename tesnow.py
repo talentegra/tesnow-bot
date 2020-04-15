@@ -21,9 +21,12 @@ def get_serial_data(sno):
     url = 'http://posiflex.dqserv.com/Api_ticket/get_serial'
     headers = {'X-TES_PRO_API_KEY': auth_token, 'serial_no': sno}
     r = requests.get(url, headers=headers).json()
-    write_json(r, '/var/www/pydev/headers_data.json')
-    billing_name = r['serial_data']['billing_name']
-    write_json(billing_name, '/var/www/pydev/serial_data.json')
+    try:
+        billing_name = r['serial_data']['billing_name']
+    
+    except:
+        billing_name = ''
+
     return billing_name
 
 
@@ -45,25 +48,19 @@ def get_cmc_data(crypto):
 def parse_message(message):
     chat_id = message['message']['chat']['id']
     txt = message['message']['text']
-    write_json(txt, '/var/www/pydev/parse.txt')
     pattern = r'/[a-zA-Z]{2,4}'
     #pattern = r'/PCID[0-9]{4,6}' 
    # pattern = r'/[a-zA-z]{2,10}'    
-    write_json(pattern, '/var/www/pydev/pattern.txt') 
     ticker_data = re.findall(pattern, txt)
-    write_json(ticker_data, '/var/www/pydev/ticker_data.txt')
     
     if ticker_data:
     #    symbol = ticker[0][1:].upper()
         ticker = ticker_data[0][1:].upper()
         chat_txt = txt.replace('/','')
-        write_json(ticker, '/var/www/pydev/ticker.txt')
-        write_json(chat_txt, '/var/www/pydev/chat_txt.txt')
     else:
         #symbol = ''
         ticker  = ''
         chat_txt = txt
-        write_json(chat_txt, '/var/www/pydev/chat_txt.txt')
    # return chat_id, symbol
     return chat_id, chat_txt, ticker   
 
@@ -73,8 +70,13 @@ def get_ticket_status(ticket_no):
     url = 'http://posiflex.dqserv.com/Api_ticket/get_ticket_status'
     headers = {'X-TES_PRO_API_KEY': auth_token, 'ticket_no': ticket_no}
     r = requests.get(url, headers=headers).json()
-    write_json(r, '/var/www/pydev/ticket_status_request.json')
-    ticket_stats = r['ticket_status']['name']
+
+    try:
+        ticket_stats = r['ticket_data']['name']
+
+    except:
+        ticket_stats = ''
+
     return ticket_stats
 
 
@@ -92,10 +94,8 @@ def index():
     if request.method == 'POST':
         msg = request.get_json()
         chat_id, chat_txt, ticker  = parse_message(msg)
-        write_json(chat_txt, '/var/www/pydev/parse_return_chat.txt')
-        write_json(ticker, '/var/www/pydev/parse_return_ticker.txt')
+        write_json(chat_id, '/var/www/pydev/parse_chat_id.json')
         if not ticker:   
-            write_json(chat_id, '/var/www/pydev/non_request.json')
             send_message(chat_id, """ Iam a bot, having limited AI to process your data, 
                                     
             Please format your query as below \n
@@ -103,21 +103,22 @@ def index():
                 Example : /PCID005515 
                 To check serial information /<serialno>, 
                 Example : /FT286413 
-                
                 Thanks for contact us""")
             return Response('ok', status=200)
         else:
             if 'PCID' in ticker:
                 ticket_data = get_ticket_status(chat_txt)
                 if not ticket_data:
-                    send_message(chat_id, 'No data found')
+                    send_message(chat_id, 'Wrong ticket number, Please enter correct ticket details')
                     return Response('ok', status=200)
                 send_message(chat_id, ticket_data)
                 return Response('ok', status=200)
             else:
                 serial_data = get_serial_data(chat_txt)
+                if not serial_data:
+                    send_message(chat_id, 'No Serial Found')
+                    return Response('ok', status=200)
                 send_message(chat_id, serial_data)
-                write_json(msg, '/var/www/pydev/serial_data.json')
                 return Response('ok', status=200)
     else:
         return '<h2>Welcome Arima</h2>'
@@ -132,4 +133,4 @@ def main():
 if __name__ == "__main__":
     app.run(debug=True)
 
-   # main()
+   # main():

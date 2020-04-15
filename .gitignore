@@ -1,3 +1,4 @@
 /venv/*
 token.py
 tokens.py
+*.json
