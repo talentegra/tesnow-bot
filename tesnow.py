@@ -38,7 +38,6 @@ def get_cmc_data(crypto):
     if r.status_code == 200:
         write_json(r, '/var/www/pydev/response.json')
         price = r['data'][crypto]['quote']['GBP']['price']
-
     else:
         price = -1
         
@@ -59,8 +58,18 @@ def parse_message(message):
         chat_txt = txt.replace('/','')
     else:
         #symbol = ''
-        ticker  = ''
-        chat_txt = txt
+        pattern = r'/'
+        ticker_data = re.findall(pattern, txt)
+        #write_json(ticker_data, '/var/www/pydev/check_else_ticker_data.json')
+
+        if ticker_data:
+           ticker = 'NONTIK'
+           chat_txt = txt.replace('/','')
+          # write_json(ticker, '/var/www/pydev/check_else_ticker.json') 
+        else:
+            ticker  = ''
+            chat_txt = txt
+            #write_json(ticker, '/var/www/pydev/check_else_last_ticker.json')
    # return chat_id, symbol
     return chat_id, chat_txt, ticker   
 
@@ -95,7 +104,7 @@ def index():
     if request.method == 'POST':
         msg = request.get_json()
         chat_id, chat_txt, ticker  = parse_message(msg)
-        write_json(chat_id, '/var/www/pydev/parse_chat_id.json')
+        #write_json(ticker, '/var/www/pydev/parse_ticker.json')
         if not ticker:   
             send_message(chat_id, """ Iam a bot, having limited AI to process your data, 
                                     
@@ -116,7 +125,7 @@ def index():
                 return Response('ok', status=200)
             else:
                 billing_name, serial_data = get_serial_data(chat_txt)
-                write_json(serial_data, '/var/www/pydev/parse_serial_data_fn.json') 
+                #write_json(serial_data, '/var/www/pydev/parse_serial_data_fn.json') 
                 if not billing_name:
                     send_message(chat_id, 'No Serial Found')
                     return Response('ok', status=200)
