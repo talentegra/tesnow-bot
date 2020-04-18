@@ -7,6 +7,7 @@ from flask import Response
 import requests
 import re
 import json
+import jsonify
 app = Flask(__name__)
 
 
@@ -23,11 +24,10 @@ def get_serial_data(sno):
     r = requests.get(url, headers=headers).json()
     try:
         billing_name = r['serial_data']['billing_name']
-    
     except:
         billing_name = ''
 
-    return billing_name
+    return billing_name, r
 
 
 def get_cmc_data(crypto):
@@ -73,6 +73,7 @@ def get_ticket_status(ticket_no):
 
     try:
         ticket_stats = r['ticket_data']['name']
+        
 
     except:
         ticket_stats = ''
@@ -99,11 +100,11 @@ def index():
             send_message(chat_id, """ Iam a bot, having limited AI to process your data, 
                                     
             Please format your query as below \n
-                To check ticket use /<ticket-number>, 
+            To check ticket use /<ticket-number>, 
                 Example : /PCID005515 
-                To check serial information /<serialno>, 
+             To check serial information /<serialno>, 
                 Example : /FT286413 
-                Thanks for contact us""")
+             Thanks for contact us""")
             return Response('ok', status=200)
         else:
             if 'PCID' in ticker:
@@ -114,11 +115,21 @@ def index():
                 send_message(chat_id, ticket_data)
                 return Response('ok', status=200)
             else:
-                serial_data = get_serial_data(chat_txt)
-                if not serial_data:
+                billing_name, serial_data = get_serial_data(chat_txt)
+                write_json(serial_data, '/var/www/pydev/parse_serial_data_fn.json') 
+                if not billing_name:
                     send_message(chat_id, 'No Serial Found')
                     return Response('ok', status=200)
-                send_message(chat_id, serial_data)
+                invoice_no = serial_data['serial_data']['invoice_no']
+                invoice_date = serial_data['serial_data']['invoice_date']
+                model_no = serial_data['serial_data']['model_no']
+                manufacturer = serial_data['serial_data']['manufacturer']
+                warranty_status = serial_data['serial_data']['warranty_status'] 
+                manufacturer = serial_data['serial_data']['manufacturer']                
+                billing_address = serial_data['serial_data']['billing_address']
+                send_message(chat_id, "Model No: " + model_no + "\nManufacturer:" + manufacturer + "\nInvoice no: " + invoice_no + "\nInvoice Date: " + invoice_date + "\nBilling Name: " + billing_name + " ")
+
+               # send_message(chat_id, serial_data)
                 return Response('ok', status=200)
     else:
         return '<h2>Welcome Arima</h2>'
