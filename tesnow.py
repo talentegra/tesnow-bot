@@ -7,7 +7,6 @@ from flask import Response
 import requests
 import re
 import json
-import jsonify
 app = Flask(__name__)
 
 
@@ -81,13 +80,13 @@ def get_ticket_status(ticket_no):
     r = requests.get(url, headers=headers).json()
 
     try:
-        ticket_stats = r['ticket_data']['name']
+        ticket_stats = r['ticket_data']['status_name']
         
 
     except:
         ticket_stats = ''
 
-    return ticket_stats
+    return ticket_stats, r
 
 
 
@@ -104,7 +103,7 @@ def index():
     if request.method == 'POST':
         msg = request.get_json()
         chat_id, chat_txt, ticker  = parse_message(msg)
-        #write_json(ticker, '/var/www/pydev/parse_ticker.json')
+        write_json(ticker, '/var/www/pydev/parse_ticker.json')
         if not ticker:   
             send_message(chat_id, """ Iam a bot, having limited AI to process your data, 
                                     
@@ -117,11 +116,27 @@ def index():
             return Response('ok', status=200)
         else:
             if 'PCID' in ticker:
-                ticket_data = get_ticket_status(chat_txt)
-                if not ticket_data:
+                ticket_status, ticket_data = get_ticket_status(chat_txt)
+                if not ticket_status:
                     send_message(chat_id, 'Wrong ticket number, Please enter correct ticket details')
                     return Response('ok', status=200)
-                send_message(chat_id, ticket_data)
+                ticket_number = ticket_data['ticket_data']['number']
+                contact_name = ticket_data['ticket_data']['name']
+                customer_name = ticket_data['ticket_data']['cust_name']
+                dept_name = ticket_data['ticket_data']['dept_name']
+                status_name = ticket_data['ticket_data']['status_name']
+                ticket_subject = ticket_data['ticket_data']['subject']
+                ticket_serial = ticket_data['ticket_data']['serial_no']
+                model_no = ticket_data['ticket_data']['model_no']
+                manufacturer = ticket_data['ticket_data']['manufacturer']
+                created_date = ticket_data['ticket_data']['ticket_created']
+                ticket_nature = ticket_data['ticket_data']['nature_call']
+                ticket_priority = ticket_data['ticket_data']['priority_desc']
+                ticket_logged_in = ticket_data['ticket_data']['call_logged_in']
+                #manufacturer = ticket_data['ticket_data']['manufacturer']
+                #billing_address = ticket_data['ticket_data']['billing_address']
+                #send_message(chat_id, ticket_data)
+                send_message(chat_id, "Ticket No: " + ticket_number + "\nCustomer: " + customer_name + "\nSummary: " + ticket_subject +  "\nSerial: " + ticket_serial + "\nModel No: " + model_no + "\nManufacturer:" + manufacturer + "\nDepartment: " + dept_name + "\nNature of Call: " + ticket_nature + "\nCall Logged in: " + ticket_logged_in + "\nPrioirty: " + ticket_priority +  "\nCreated Date: " + created_date + "\nStatus: " + status_name + " ")
                 return Response('ok', status=200)
             else:
                 billing_name, serial_data = get_serial_data(chat_txt)
