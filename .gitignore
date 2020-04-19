@@ -2,3 +2,4 @@
 token.py
 tokens.py
 *.json
+__pycache__/
