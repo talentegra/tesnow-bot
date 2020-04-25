@@ -104,6 +104,16 @@ def index():
         msg = request.get_json()
         chat_id, chat_txt, ticker  = parse_message(msg)
         write_json(ticker, '/var/www/pydev/parse_ticker.json')
+        write_json(chat_id, '/var/www/pydev/chat_id.json')
+        #794788102 - Vidhya id,  1068360748 - muthuraman, 956089070 - Vivek, 1007886176 - Asha       
+        admin_chat_ids = [956089070, 1068360748, 1007886176]
+
+        #if ((chat_id != 956089070) and (chat_id != 1068360748)):
+        if chat_id not in admin_chat_ids:    
+            send_message(chat_id, "Sorry, You are  not authorized to access this chatbot")
+            return Response('ok', status=200)
+        
+
         if not ticker:   
             send_message(chat_id, """ Iam a bot, having limited AI to process your data, 
                                     
